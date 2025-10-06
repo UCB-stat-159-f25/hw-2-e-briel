@@ -1,1 +1,310 @@
 Document for tracking AI usage in HW 2
+
+For assistance I used ChatGPT
+
+Prompt: I have a remote repository via GitHub classroom and would like to add specific files from another remote repository on GitHub to it. How would I best accomplish this?
+
+Output: Perfect — that’s a very practical (and slightly tricky) Git workflow question.
+
+Let’s restate your situation first:
+
+* You have a **main remote repo** (from GitHub Classroom) — let’s call it `origin`.
+* You want to bring **specific files or folders** from **another remote GitHub repo** — let’s call that `source-repo`.
+* You **don’t want** to clone everything from `source-repo` or merge its entire history.
+
+Here are the **best options**, depending on what you need:
+
+---
+
+## 🧩 Option 1: **Use `git sparse-checkout` with the source repo**
+
+This is the cleanest way to pull *specific files* from another repo into your Classroom repo, while keeping full Git control.
+
+### Steps
+
+1. From your Classroom repo:
+
+   ```bash
+   git clone https://github.com/YOUR-CLASSROOM-ORG/YOUR-CLASSROOM-REPO.git
+   cd YOUR-CLASSROOM-REPO
+   ```
+
+2. Add the other repo as a temporary remote:
+
+   ```bash
+   git remote add source https://github.com/username/source-repo.git
+   ```
+
+3. Use sparse-checkout to pull only what you need:
+
+   ```bash
+   git fetch source
+   git sparse-checkout init --cone
+   git sparse-checkout set path/to/file1.py path/to/folder/
+   git checkout source/main -- path/to/file1.py path/to/folder/
+   ```
+
+4. Commit and push the imported files to your Classroom repo:
+
+   ```bash
+   git add path/to/file1.py path/to/folder/
+   git commit -m "Add selected files from source-repo"
+   git push origin main
+   ```
+
+✅ *Pros:*
+
+* Only downloads specific files.
+* Keeps clean commit history in your repo.
+* Doesn’t clone or merge the entire source repo.
+
+❌ *Cons:*
+
+* Slightly more setup.
+* Requires Git ≥ 2.25.
+
+---
+
+## 📦 Option 2: **Download specific files directly and commit them**
+
+If you don’t need to preserve history, and you only want the file contents:
+
+1. Use `curl` or `wget` with the raw GitHub URL:
+
+   ```bash
+   curl -O https://raw.githubusercontent.com/username/source-repo/main/path/to/file.py
+   ```
+
+2. Then move that file into your Classroom repo directory, add, commit, and push:
+
+   ```bash
+   git add path/to/file.py
+   git commit -m "Add file.py from source-repo"
+   git push origin main
+   ```
+
+✅ *Pros:*
+
+* Fast and dead simple.
+* Great for a few files.
+
+❌ *Cons:*
+
+* Loses commit history.
+* Manual process if you need many files.
+
+---
+
+## 🧭 Option 3: **Use `git subtree` or `git filter-repo` (advanced)**
+
+If you want to *preserve the file’s original history* from the source repo, you can pull it in with `git subtree` or `git filter-repo`.
+
+For example:
+
+```bash
+git remote add source https://github.com/username/source-repo.git
+git fetch source main
+git subtree add --prefix=external_files source main --squash
+```
+
+✅ *Pros:*
+
+* Keeps history (or a squashed version).
+* Good if you’ll update those files later from the source.
+
+❌ *Cons:*
+
+* More complex, overkill if you just want to copy files once.
+
+---
+
+## 🪄 My recommendation
+
+| Use Case                                   | Recommended Method                       |
+| ------------------------------------------ | ---------------------------------------- |
+| Just need file contents                    | ✅ Option 2 — `curl` the raw files        |
+| Need to use Git tools & keep project clean | ✅ Option 1 — `sparse-checkout`           |
+| Need to preserve history from source repo  | ⚙️ Option 3 — `subtree` or `filter-repo` |
+
+---
+
+Would you like me to show a **copy-pasteable example** using real folder names (e.g., importing a folder like `utils/` or a file like `data/cleaner.py` from another GitHub repo into your Classroom repo)? That would make it crystal clear.
+
+Prompt: Is path/to/file1.py path/to/folder/ a specific command or is it something general that I need to fill out/define myself?
+
+Output: Excellent question — and it’s an important one 👍
+
+👉 `path/to/file1.py` and `path/to/folder/` are **not literal commands** — they’re **placeholders** that **you replace** with the *actual paths* of the files or folders you want to copy from the other repository.
+
+---
+
+### 💡 Example
+
+Let’s say the repository you want to pull from is:
+
+```
+https://github.com/exampleuser/cool-project
+```
+
+and inside it, you want to copy these:
+
+```
+cool-project/src/utils/math_tools.py
+cool-project/data/example_data/
+```
+
+Then the commands would look like this:
+
+```bash
+git sparse-checkout set src/utils/math_tools.py data/example_data/
+git checkout source/main -- src/utils/math_tools.py data/example_data/
+```
+
+Here:
+
+* `src/utils/math_tools.py` → is the **actual file path** in the source repo.
+* `data/example_data/` → is the **actual folder path** in the source repo.
+
+---
+
+### 🧭 How to find the correct path
+
+1. Go to the file or folder on GitHub.
+2. Look at the URL — for example:
+
+   ```
+   https://github.com/exampleuser/cool-project/blob/main/src/utils/math_tools.py
+   ```
+
+   The part after `blob/main/` is your path:
+
+   ```
+   src/utils/math_tools.py
+   ```
+
+That’s what you insert into the command.
+
+---
+
+### 🧩 Quick recap
+
+| Placeholder        | You replace it with                            |
+| ------------------ | ---------------------------------------------- |
+| `path/to/file1.py` | the exact relative path to the file you want   |
+| `path/to/folder/`  | the exact relative path to the folder you want |
+
+---
+
+Would you like to tell me the exact repo and files you want to import (just the GitHub URLs)?
+I can show you the *exact commands* you’d run with those filled in correctly.
+
+Prompt: This is the repo I want to pull from https://github.com/gwosc-tutorial/LOSC_Event_tutorial.git and I would like to pull the files BBH_events_v3.json
+GW150914_4_template.hdf5
+H-H1_LOSC_4_V2-1126259446-32.hdf5
+L-L1_LOSC_4_V2-1126259446-32.hdf5 
+as well as the LOSC_Event_tutorial.ipynb notebook and the readligo.py utility file.
+
+Output: Perfect 👍 — that’s a very clear setup. You have your **GitHub Classroom repo** (your working repository) and you want to **pull 6 specific files** from:
+
+👉 [`https://github.com/gwosc-tutorial/LOSC_Event_tutorial`](https://github.com/gwosc-tutorial/LOSC_Event_tutorial)
+
+Here’s exactly how to do this cleanly **without cloning the entire source repo**, using a single `git sparse-checkout` workflow.
+
+---
+
+## ✅ **Option 1: Git sparse-checkout method (recommended if you want to preserve Git use)**
+
+### Step-by-step
+
+1. Go to (or clone) your **GitHub Classroom repo**:
+
+```bash
+git clone https://github.com/YOUR-CLASSROOM-ORG/YOUR-CLASSROOM-REPO.git
+cd YOUR-CLASSROOM-REPO
+```
+
+2. Add the LOSC tutorial repo as a **temporary remote**:
+
+```bash
+git remote add losc https://github.com/gwosc-tutorial/LOSC_Event_tutorial.git
+```
+
+3. **Fetch** from that remote (so you can access its files):
+
+```bash
+git fetch losc
+```
+
+4. Initialize **sparse-checkout**:
+
+```bash
+git sparse-checkout init --cone
+```
+
+5. Tell Git which files you want (these are the *exact paths* in that repo):
+
+```bash
+git sparse-checkout set \
+    BBH_events_v3.json \
+    GW150914_4_template.hdf5 \
+    H-H1_LOSC_4_V2-1126259446-32.hdf5 \
+    L-L1_LOSC_4_V2-1126259446-32.hdf5 \
+    LOSC_Event_tutorial.ipynb \
+    readligo.py
+```
+
+6. **Check out** those files from the `main` branch of the LOSC repo:
+
+```bash
+git checkout losc/main -- \
+    BBH_events_v3.json \
+    GW150914_4_template.hdf5 \
+    H-H1_LOSC_4_V2-1126259446-32.hdf5 \
+    L-L1_LOSC_4_V2-1126259446-32.hdf5 \
+    LOSC_Event_tutorial.ipynb \
+    readligo.py
+```
+
+7. **Commit and push** the files into your Classroom repo:
+
+```bash
+git add .
+git commit -m "Add LOSC tutorial files from gwosc-tutorial/LOSC_Event_tutorial"
+git push origin main
+```
+
+✅ Done!
+Now those files are part of your GitHub Classroom repository, without cloning or merging the entire tutorial repo.
+
+---
+
+## 🧩 **Option 2: Simple one-off download (no Git integration)**
+
+If you just want the files, you can also directly download them with `curl`:
+
+```bash
+curl -O https://raw.githubusercontent.com/gwosc-tutorial/LOSC_Event_tutorial/main/BBH_events_v3.json
+curl -O https://raw.githubusercontent.com/gwosc-tutorial/LOSC_Event_tutorial/main/GW150914_4_template.hdf5
+curl -O https://raw.githubusercontent.com/gwosc-tutorial/LOSC_Event_tutorial/main/H-H1_LOSC_4_V2-1126259446-32.hdf5
+curl -O https://raw.githubusercontent.com/gwosc-tutorial/LOSC_Event_tutorial/main/L-L1_LOSC_4_V2-1126259446-32.hdf5
+curl -O https://raw.githubusercontent.com/gwosc-tutorial/LOSC_Event_tutorial/main/LOSC_Event_tutorial.ipynb
+curl -O https://raw.githubusercontent.com/gwosc-tutorial/LOSC_Event_tutorial/main/readligo.py
+```
+
+Then move them into your Classroom repo folder and push as usual.
+
+❗Note:
+Some `.hdf5` binary files are large — if you use `curl`, make sure your connection doesn’t time out or truncate them.
+
+---
+
+## 🧭 Recommendation
+
+| Goal                   | Best Method              |
+| ---------------------- | ------------------------ |
+| Keep using Git cleanly | ✅ Sparse-checkout method |
+| Quick manual copy      | ⚡ Curl download          |
+
+---
+
+Would you like me to show a small **Bash script** version that automates this sparse-checkout process (so you can rerun it easily in the future)?
