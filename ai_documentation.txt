@@ -308,3 +308,489 @@ Some `.hdf5` binary files are large — if you use `curl`, make sure your connec
 ---
 
 Would you like me to show a small **Bash script** version that automates this sparse-checkout process (so you can rerun it easily in the future)?
+
+Prompt: (notebook) jovyan@jupyter-e-briel---8ada04b7:~/hw-2-e-briel$ git add ligotools/
+The following paths and/or pathspecs matched paths that exist
+outside of your sparse-checkout definition, so will not be
+updated in the index:
+ligotools/readligo.py
+hint: If you intend to update such entries, try one of the following:
+hint: * Use the --sparse option.
+hint: * Disable or modify the sparsity rules.
+hint: Disable this message with "git config set advice.updateSparsePath false"
+
+I have created a new folder to hold the .py file that was pulled earlier and am attempting to add it to my commit for my personal remote GitHub repo and this message came up. What does this mean?
+
+Output: Excellent — you’re actually bumping into a *quirk* of how `git sparse-checkout` works.
+Let’s unpack this carefully, because it’s a **very common confusion** when mixing sparse-checkout with new local files 👇
+
+---
+
+### 🧠 What’s happening
+
+You’re seeing:
+
+```
+The following paths and/or pathspecs matched paths that exist
+outside of your sparse-checkout definition, so will not be
+updated in the index:
+ligotools/readligo.py
+```
+
+That means:
+
+> Git’s **sparse-checkout configuration** currently tells Git:
+> “Only track these specific paths from the working tree.”
+>
+> And right now, your new folder `ligotools/` (and its file) **is not included** in that sparse-checkout list — so Git is **ignoring** it when you try `git add`.
+
+Essentially:
+🚫 Git: “That file isn’t in the list of files I’m managing under sparse-checkout, so I won’t track it.”
+
+---
+
+### 🧩 How to fix it
+
+You have 3 valid options — depending on how you want to handle your repo.
+
+---
+
+#### ✅ **Option 1: Temporarily disable sparse-checkout**
+
+This lets Git behave normally again (track *everything* in your working directory):
+
+```bash
+git sparse-checkout disable
+```
+
+Then you can just:
+
+```bash
+git add ligotools/readligo.py
+git commit -m "Add readligo.py to ligotools folder"
+git push origin main
+```
+
+This is the **simplest and cleanest** option if you’re done pulling files from the other repo and just want to resume normal Git behavior.
+
+---
+
+#### ⚙️ **Option 2: Add your new folder to the sparse-checkout definition**
+
+If you still want sparse-checkout active, but just want to include this new folder, run:
+
+```bash
+git sparse-checkout set ligotools/
+```
+
+Then Git will expand its working set to include everything under `ligotools/`, and you can safely add and commit the file:
+
+```bash
+git add ligotools/readligo.py
+git commit -m "Add readligo.py"
+git push origin main
+```
+
+---
+
+#### 🧩 **Option 3: Use `--sparse` when adding**
+
+Git gives you this hint:
+
+```
+hint: * Use the --sparse option.
+```
+
+That means you can *force* Git to stage the file even if it’s outside the sparse paths:
+
+```bash
+git add --sparse ligotools/readligo.py
+```
+
+Then commit and push as usual.
+
+✅ Works fine for small changes.
+❗ But if you plan to do a lot more work, it’s usually easier to disable sparse-checkout entirely.
+
+---
+
+### 🧭 TL;DR — What you should probably do
+
+If you’re done importing files from the other repo:
+
+```bash
+git sparse-checkout disable
+git add ligotools/readligo.py
+git commit -m "Add readligo.py to my repo"
+git push origin main
+```
+
+That will re-enable normal Git behavior for your Classroom repo, and you won’t see that message again.
+
+---
+
+Would you like me to show you what your `.git/info/sparse-checkout` file currently contains? That’s the file that defines which paths are active, and it’s helpful to understand what Git is using behind the scenes.
+
+
+Prompt: I noticed in my repo on GitHub that none of my tags are appearing. I am using git tag <tag name> as the method to add tags.
+
+Output: Good catch — this is a *very common* source of confusion with Git tags, especially when working with GitHub.
+
+Here’s what’s going on 👇
+
+---
+
+## 🧠 What’s happening
+
+When you run:
+
+```bash
+git tag <tagname>
+```
+
+You are creating a **local tag only** — it exists only in your local `.git` metadata.
+
+By default, **Git does not automatically push tags** when you push commits.
+That’s why your tags don’t appear on GitHub yet — they haven’t been uploaded.
+
+---
+
+## ✅ How to push tags to GitHub
+
+There are two main ways to do it, depending on what you want:
+
+---
+
+### Option 1: Push a specific tag
+
+If you just created one tag (say `v1.0`):
+
+```bash
+git push origin v1.0
+```
+
+This sends only that single tag to your GitHub remote (`origin`).
+
+---
+
+### Option 2: Push all local tags
+
+If you’ve created multiple tags and want them all to appear on GitHub:
+
+```bash
+git push origin --tags
+```
+
+This uploads **every tag** in your local repo that doesn’t yet exist on GitHub.
+
+---
+
+### Option 3 (optional): Check which tags exist locally
+
+Before pushing, you can verify what tags exist:
+
+```bash
+git tag
+```
+
+That lists all your local tags.
+
+You can also check which tags exist remotely:
+
+```bash
+git ls-remote --tags origin
+```
+
+That shows which tags GitHub currently knows about.
+
+---
+
+## 🧩 Summary
+
+| Goal             | Command                       |
+| ---------------- | ----------------------------- |
+| Create a tag     | `git tag v1.0`                |
+| Push one tag     | `git push origin v1.0`        |
+| Push all tags    | `git push origin --tags`      |
+| List local tags  | `git tag`                     |
+| List remote tags | `git ls-remote --tags origin` |
+
+---
+
+### ⚠️ Bonus Tip: Annotated vs. lightweight tags
+
+If you want your tags to appear more clearly in GitHub’s UI (with description, author, date), make them **annotated tags**:
+
+```bash
+git tag -a v1.0 -m "Release version 1.0"
+git push origin v1.0
+```
+
+GitHub treats annotated tags as proper “releases,” while lightweight tags are just pointers to commits.
+
+---
+
+Would you like me to show how to **turn your existing lightweight tags into annotated ones** (so they show up properly in GitHub’s “Releases” tab)?
+
+Prompt: I would like to check the package version of scipy from another notebook. The notebook uses the imports "from scipy import signal", "from scipy.interpolate import interp1d", etc and I received the following error when attempting to use __version__ to check the version history:
+NameError                                 Traceback (most recent call last)
+Cell In[5], line 1
+----> 1 scipy.__version__
+
+NameError: name 'scipy' is not defined
+
+AttributeError                            Traceback (most recent call last)
+Cell In[6], line 1
+----> 1 signal.__version__
+
+AttributeError: module 'scipy.signal' has no attribute '__version__'
+
+Output: Excellent observation — this behavior is **exactly what we’d expect** given how the imports are done. Let’s unpack it:
+
+---
+
+### 🧠 Why you’re getting that error
+
+In your notebook, you said you imported:
+
+```python
+from scipy import signal
+from scipy.interpolate import interp1d
+```
+
+That means:
+
+* You imported **specific submodules** (`signal`, `interpolate`) and a function (`interp1d`),
+* But you **did not import the root `scipy` module** itself.
+
+So, when you later run:
+
+```python
+scipy.__version__
+```
+
+Python says:
+
+```
+NameError: name 'scipy' is not defined
+```
+
+because the name `scipy` doesn’t exist in your namespace.
+
+And when you try:
+
+```python
+signal.__version__
+```
+
+you get:
+
+```
+AttributeError: module 'scipy.signal' has no attribute '__version__'
+```
+
+because the version attribute only exists at the **top-level package** (`scipy`), not in submodules like `scipy.signal`.
+
+---
+
+### ✅ How to check the SciPy version correctly
+
+You have a few options depending on how you want to do it:
+
+#### **Option 1 — Import `scipy` and check the version**
+
+Just add this line in your notebook:
+
+```python
+import scipy
+print(scipy.__version__)
+```
+
+That’s the most straightforward and canonical way.
+
+---
+
+#### **Option 2 — Use `pip show` (from a notebook or terminal)**
+
+From inside a notebook cell:
+
+```python
+!pip show scipy
+```
+
+or just in a terminal:
+
+```bash
+pip show scipy
+```
+
+This shows the installed version, location, and dependencies.
+
+---
+
+#### **Option 3 — Use `importlib.metadata` (Python ≥ 3.8)**
+
+If you want to avoid importing SciPy directly:
+
+```python
+from importlib.metadata import version
+print(version("scipy"))
+```
+
+This reads the version metadata from the installed package.
+
+---
+
+### 🧩 Summary
+
+| Command                               | Works?                              | Description                              |
+| ------------------------------------- | ----------------------------------- | ---------------------------------------- |
+| `scipy.__version__`                   | ✅ Yes (if you `import scipy` first) | Standard way                             |
+| `signal.__version__`                  | ❌ No                                | Submodules don’t have version attributes |
+| `!pip show scipy`                     | ✅ Yes                               | Shell-based method                       |
+| `importlib.metadata.version("scipy")` | ✅ Yes                               | Pure Python method (no import)           |
+
+---
+
+**Recommended:**
+Just add one line at the top or bottom of your notebook:
+
+```python
+import scipy
+print("SciPy version:", scipy.__version__)
+```
+
+Would you like me to show a short snippet that automatically prints the version of *all* key packages in your notebook (like `numpy`, `scipy`, `matplotlib`, `pandas`)? That can be handy for reproducibility.
+
+Prompt: I tried adding my new environment using conda (as shown in our class examples) and received this output message in my terminal:
+Channels:
+ - conda-forge
+ - nodefaults
+ - defaults
+Platform: linux-64
+Collecting package metadata (repodata.json): done
+Solving environment: failed
+
+PackagesNotFoundError: The following packages are not available from current channels:
+
+  - readligo=0.6*
+  - json=2.0*
+
+Current channels:
+
+  - https://conda.anaconda.org/conda-forge
+  - https://conda.anaconda.org/nodefaults
+  - https://repo.anaconda.com/pkgs/main
+  - https://repo.anaconda.com/pkgs/r
+
+To search for alternate channels that may provide the conda package you're
+looking for, navigate to
+
+    https://anaconda.org
+
+and use the search bar at the top of the page.
+
+Output: Excellent — this error message is very informative, and it’s one that comes up often when building environments for coursework.
+
+Let’s break it down carefully 👇
+
+---
+
+## 🧠 What’s going on
+
+Conda is telling you:
+
+```
+PackagesNotFoundError: The following packages are not available from current channels:
+
+  - readligo=0.6*
+  - json=2.0*
+```
+
+That means:
+
+* Conda searched all your listed channels (`conda-forge`, `defaults`, etc.)
+* It could **not find any conda package** named `readligo` or `json` with those version patterns.
+
+---
+
+### 🧩 The root cause
+
+#### 1️⃣ **`readligo` is *not* a published conda package**
+
+It’s a **local Python module** from the [LOSC tutorial repo](https://github.com/gwosc-tutorial/LOSC_Event_tutorial), not something available on conda-forge or PyPI.
+
+You’re meant to include `readligo.py` directly in your project (as you already did earlier), **not install it via conda**.
+
+So:
+✅ Remove `readligo=0.6*` from your environment file.
+You’ll just keep the `readligo.py` file locally in your repo.
+
+---
+
+#### 2️⃣ **`json` is part of Python’s standard library**
+
+There is no separate `json` package to install — it comes automatically with Python.
+So conda will never find a `json` package.
+
+✅ Remove `json=2.0*` as well.
+
+---
+
+## 🧭 How to fix your environment file
+
+Open your `environment.yml` (or whatever file you used) and **remove these two lines**:
+
+```yaml
+  - readligo=0.6*
+  - json=2.0*
+```
+
+Keep the scientific stack (like `numpy`, `scipy`, `matplotlib`, `decorator`, `ipykernel`, etc.) and then rebuild your environment.
+
+---
+
+### ✅ Example fixed environment.yml
+
+Here’s a clean version you can use as a template:
+
+```yaml
+name: losc-env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - numpy
+  - scipy
+  - matplotlib
+  - h5py
+  - decorator
+  - ipykernel
+  - jupyterlab
+```
+
+Then recreate your environment:
+
+```bash
+conda env create -f environment.yml
+conda activate losc-env
+```
+
+✅ This should now solve cleanly with no errors.
+
+---
+
+### ⚙️ Optional: Verify everything works
+
+Inside your environment:
+
+```bash
+python -c "import scipy, decorator, h5py, readligo; print('All good!')"
+```
+
+If `readligo.py` is in your repo folder, Python will import it fine.
+
+---
+
+Would you like me to show how to make `readligo.py` importable *automatically* when your notebook runs (so you don’t need to manually add paths each time)?
